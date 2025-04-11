@@ -1,0 +1,37 @@
+version: '3'
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: todoadmin
+      POSTGRES_DB: todos
+    ports: 
+      - "5434:5432"  # Map host port 5433 to container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    # build: ./backend
+    image: spookeyy/go-todo-backend:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=todoadmin
+      - DB_PASSWORD=password
+      - DB_NAME=todos
+
+  frontend:
+    # build: ./frontend
+    image: spookeyy/go-todo-frontend:latest
+    ports:
+      - "3000:80" # Map host 3000 → container 80 (nginx)
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
