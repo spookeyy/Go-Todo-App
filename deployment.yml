@@ -11,10 +11,31 @@ spec:
     metadata:
       labels:
         app: myapp
+      annotations:
+        appVersion: "v1.0.{{ .Timestamp }}"
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command: ['sh', '-c', 'until nc -z db 5432; do echo waiting for db; sleep 2; done']
       containers:
       - name: myapp
         image: spookeyy/go-todo-backend:latest
+        ports:
+          - containerPort: 8080
+        env:
+          - name: DB_HOST
+            value: "db"
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_USER
+            value: "todoadmin"
+          - name: DB_PASSWORD
+            value: "password"
+          - name: DB_NAME
+            value: "todos"
+          - name: DB_URL
+            value: "postgresql://todoadmin:password@db:5432/todos?sslmode=disable"
         resources:
           requests:
             memory: "256Mi"
@@ -22,11 +43,9 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-        ports:
-        - containerPort: 8080
 
 ---
-
+# service to allow us to access the pods
 apiVersion: v1
 kind: Service
 metadata:
@@ -36,5 +55,5 @@ spec:
   selector:
     app: myapp
   ports:
-  - port: 80
+  - port: 8080
     targetPort: 8080
